@@ -8,18 +8,18 @@ import pathlib
 import glob
 
 class AudioDataset(Dataset):
-    """Custom dataset for images with labels based on folder structure, example:
-    MyFolder/label1/image1.jpg
-    MyFolder/label1/image2.jpg
-    MyFolder/label2/image4.jpg
-    MyFolder/label2/image5.jpg
+    """Custom dataset for audio files with labels based on folder structure, example:
+    MyFolder/label1/audio1.wav
+    MyFolder/label1/audio2.wav
+    MyFolder/label2/audio4.wav
+    MyFolder/label2/audio5.wav
     """
 
     def __init__(self, root_path, max_sample_length, transform=None, target_transform=None, shuffel=True):
         super().__init__()
-        image_paths, image_classes = self._get_subfolder(root_path)
-        self.targets = image_classes
-        self.img_paths = image_paths
+        audio_paths, audio_classes = self._get_subfolder(root_path)
+        self.targets = audio_classes
+        self.audio_paths = audio_paths
         self.transform = transform
         self.target_transform = target_transform
         self.shuffel = shuffel
@@ -35,44 +35,44 @@ class AudioDataset(Dataset):
             if(os.path.isdir(fullPath)):
                 training_names.append(file)
 
-        # Get all the path to the images and save them in a list
-        # image_paths and the corresponding label in image_paths
-        image_paths = []
-        image_classes = []
+        # Get all the path to the audios and save them in a list
+        # audio_paths and the corresponding label in audio_paths
+        audio_paths = []
+        audio_classes = []
         class_id = 0
         for training_name in training_names:
             training_dir = os.path.join(root_path, training_name)
             class_path = AudioDataset.imlist(training_dir, "*.wav")
-            image_paths += class_path
-            image_classes += [class_id] * len(class_path)
+            audio_paths += class_path
+            audio_classes += [class_id] * len(class_path)
             class_id += 1
 
-        return image_paths, image_classes
+        return audio_paths, audio_classes
 
     def __len__(self):
         return len(self.targets)
 
     @staticmethod
     def pil_loader(path):
-        """Open image, required to prevent tensorflow error"""
+        """Open audio, required to prevent tensorflow error"""
         # open path as file to avoid ResourceWarning (https://github.com/python-pillow/Pillow/issues/835)
         with open(path, "rb") as f:
             waveform, samplerate = torchaudio.load(f)
             return waveform
 
     def __getitem__(self, index):
-        image = AudioDataset.pil_loader(self.img_paths[index])
-        image = torch.tensor(image, dtype = torch.float)
+        audio = AudioDataset.pil_loader(self.audio_paths[index])
+        audio = audio.float()
         label = torch.tensor(self.targets[index], dtype=torch.float)
         if self.transform:
-            image = self.transform(image)
+            audio = self.transform(audio)
         if self.target_transform:
             label = self.target_transform(label)
-        if(image.shape[2] < self.max_sample_length):
-            # self.max_len = image.shape[2]
-            image = torch.cat((image, torch.zeros(image.shape[0], image.shape[1], self.max_sample_length - image.shape[2])), dim=2)
-        image = image.squeeze(0)
-        return [image, label]
+        if(audio.shape[2] < self.max_sample_length):
+            # self.max_len = audio.shape[2]
+            audio = torch.cat((audio, torch.zeros(audio.shape[0], audio.shape[1], self.max_sample_length - audio.shape[2])), dim=2)
+        audio = audio.squeeze(0)
+        return [audio, label]
 
     @staticmethod
     def imlist(path, fileExtension):

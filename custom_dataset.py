@@ -6,7 +6,8 @@ import torch
 import torchaudio
 import pathlib
 import glob
-
+import math
+import numpy as np
 class AudioDataset(Dataset):
     """Custom dataset for audio files with labels based on folder structure, example:
     MyFolder/label1/audio1.wav
@@ -65,7 +66,7 @@ class AudioDataset(Dataset):
         audio = audio.float()
         label = torch.tensor(self.targets[index], dtype=torch.float)
         if self.transform:
-            audio = self.transform(audio)
+            audio = self.transform(audio) 
         if self.target_transform:
             label = self.target_transform(label)
         if(audio.shape[2] < self.max_sample_length):
@@ -86,3 +87,10 @@ class AudioDataset(Dataset):
         return files
         return [os.path.join(path, f) for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))]
         # return [os.path.join(path, f) for f in (os.listdir(path) if os.path.isfile(f))]
+
+def lambda_noise_transform(audio):
+    RMS=torch.sqrt(torch.mean(audio**2))
+    noise=np.random.normal(0, RMS, audio.shape[0])
+    noise = torch.tensor(noise)
+    audio = (audio+noise).float()
+    return audio

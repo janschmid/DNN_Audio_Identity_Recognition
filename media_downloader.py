@@ -8,16 +8,15 @@ import pathlib
 
 
 root_dir = os.path.dirname(os.path.realpath(__file__))
-outputDir = os.path.join(root_dir, "youtubeDl")
-link = "https://youtu.be/-2AxKyNAaM0"
+outputDir = os.path.join(root_dir, "youtubeDl","3minClip" )
+link = "https://www.youtube.com/watch?v=7Pf3VYfP-7I"
 yt = YouTube(link)
 stream = yt.streams.get_highest_resolution()
 os.makedirs(outputDir, exist_ok=True)
 fileName = yt.title.lower().replace(' ', '_')+".mp4"
-# stream.download(outputDir, filename=fileName)
-fileName="audioDownload_01_10_21.mp3"
-# inputFileExtension = pathlib.Path(fileName).suffix.split(['.'])
-inputFileExtension="mp3"
+stream.download(outputDir, filename=fileName)
+# fileName="audioDownload_01_10_21.mp3"
+inputFileExtension = pathlib.Path(fileName).suffix.split('.')[1]
 filePath = os.path.join(outputDir, fileName)
 audioSegment = AudioSegment.from_file(filePath, format=inputFileExtension)
 audioSegment.set_channels(1)

@@ -1,5 +1,6 @@
 import torch
 from torch import nn
+from torch.nn.modules.batchnorm import LazyBatchNorm1d
 
 
 class WhichPodcasterLSTM(nn.Module):
@@ -8,21 +9,25 @@ class WhichPodcasterLSTM(nn.Module):
         self.hs = hidden_size
         self.nl = num_layers
         self.lstm = nn.LSTM(input_size=input_size, hidden_size=hidden_size, num_layers=1, batch_first=True)
-        self.softmax = nn.LogSoftmax(dim=1)
+        self.softmax = nn.Softmax(dim=1)
         self.fc = nn.Sequential(
         nn.Linear(hidden_size,32),
         nn.ReLU(),
         nn.BatchNorm1d(max_sample_length),
-        nn.Linear(32,num_labels)
+        nn.Linear(32,num_labels),
+        nn.ReLU()
         )
         self.fc2 = nn.Sequential(
             nn.Linear(max_sample_length,64),
             nn.ReLU(),
             nn.Dropout(0.3),
+            nn.LazyBatchNorm1d(),
             nn.Linear(64,16),
             nn.ReLU(),
-            # nn.Dropout(0.3),
-            nn.Linear(16,1)
+            nn.Dropout(0.2),
+            nn.LazyBatchNorm1d(),
+            nn.Linear(16,1),
+            nn.ReLU()
             )
         
     def forward(self, x):
@@ -33,9 +38,10 @@ class WhichPodcasterLSTM(nn.Module):
         x = self.fc(x)
         x = x.transpose(2,1)
         x = self.fc2(x)
-        x = self.softmax(x)
+        # x = self.softmax(x)
 
         return x
+
 
 class WhichPodcasterCNN(nn.Module):
     def __init__(self, num_labels = 2):
@@ -43,30 +49,28 @@ class WhichPodcasterCNN(nn.Module):
         self.softmax = nn.LogSoftmax(dim=0)
 
         self.conv = nn.Sequential(
-            nn.Conv2d(1, 32, 3),
+            nn.Conv2d(1, 32, 10),
             nn.ReLU(),
-            nn.MaxPool2d(3),
-            nn.Conv2d(32, 64, 10),
+            nn.MaxPool2d(5),
+            nn.Conv2d(32, 64, 3),
             nn.ReLU(),
             nn.MaxPool2d(3),
             nn.LazyBatchNorm2d(),
             nn.Dropout2d(0.3),
-            nn.ReLU(),
-            # nn.MaxPool2d(3)
+            nn.ReLU()
         )
         self.flatten=  nn.Sequential(
-            nn.Flatten(),
-            nn.ReLU())
+            nn.Flatten()
+        )
         self.linear = nn.Sequential(
-            nn.LazyBatchNorm1d(),
-            nn.Dropout(0.3),
             nn.LazyLinear(1000),
             nn.ReLU(),
             nn.Dropout(0.3),
             nn.LazyLinear(10),
             nn.ReLU(),
             nn.Dropout(0.3),
-            nn.LazyLinear(num_labels)
+            nn.LazyLinear(num_labels),
+            nn.ReLU(),
         )
 
     def forward(self, x):
@@ -74,7 +78,7 @@ class WhichPodcasterCNN(nn.Module):
         x = self.conv(x)
         x = self.flatten(x)
         x = self.linear(x)
-        x = self.softmax(x)
+        # x = self.softmax(x)
         x = x.unsqueeze(2)
         return x
 

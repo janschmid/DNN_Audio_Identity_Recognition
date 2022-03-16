@@ -1,6 +1,5 @@
 dataset/*
 dataset*
 output/*
-*.wav
 *.mp4
 *.pyc
